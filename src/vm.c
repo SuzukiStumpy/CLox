@@ -2,6 +2,7 @@
 
 #include "common.h"
 #include "debug.h"
+#include "compiler/compiler.h"
 #include "vm.h"
 
 VM vm;
@@ -99,8 +100,7 @@ static InterpretResult run() {
  * @param chunk The memory chunk to execute
  * @return The status result of execution
  */
-InterpretResult interpret(Chunk* chunk) {
-    vm.chunk = chunk;
-    vm.ip = vm.chunk->code;
-    return run();
+InterpretResult interpret(const char* source) {
+    compile(source);
+    return INTERPRET_OK;
 }
