@@ -6,7 +6,12 @@
 
 // Definition of the opcodes supported by the interpreter
 typedef enum {
+    OP_ADD,
     OP_CONSTANT,
+    OP_DIVIDE,
+    OP_MULTIPLY,
+    OP_NEGATE,
+    OP_SUBTRACT,
     OP_RETURN,
 } OpCode;
 
