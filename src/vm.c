@@ -79,7 +79,7 @@ static Value peek(int distance) {
  * @param value the value to test
  * @return true if the value is falsey, false otherwise.
  */
-static book isFalsey(Value value) {
+static bool isFalsey(Value value) {
     return IS_NIL(value) || (IS_BOOL(value) && !AS_BOOL(value));
 }
 
@@ -138,6 +138,14 @@ static InterpretResult run() {
                 printValue(pop());
                 printf("\n");
                 return INTERPRET_OK;
+            case OP_EQUAL: {
+                Value b = pop();
+                Value a = pop();
+                push(BOOL_VAL(valuesEqual(a, b)));
+                break;
+            }
+            case OP_GREATER:    BINARY_OP(BOOL_VAL, >); break;
+            case OP_LESS:       BINARY_OP(BOOL_VAL, <); break;
         }
     }
 #undef BINARY_OP

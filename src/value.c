@@ -54,3 +54,19 @@ void printValue(Value value) {
             break;
     }
 }
+
+/**
+ * Compares any two Values (of any type) and returns true if they are equal
+ * @param a the first Value
+ * @param b the second Value
+ * @return true if a and b are equal/equivalent, false otherwise.
+ */
+bool valuesEqual(Value a, Value b) {
+    if (a.type != b.type) return false;
+    switch (a.type) {
+        case VAL_BOOL:      return AS_BOOL(a) == AS_BOOL(b);
+        case VAL_NIL:       return true;
+        case VAL_NUMBER:    return AS_NUMBER(a) == AS_NUMBER(b);
+        default:            return false; // Unreachable
+    }
+}
