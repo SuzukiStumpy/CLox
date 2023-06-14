@@ -6,7 +6,7 @@
 #include "memory.h"
 #include "common.h"
 #include "debug.h"
-#include "compiler/compiler.h"
+#include "compiler.h"
 #include "vm.h"
 
 VM vm;
@@ -42,12 +42,14 @@ static void runtimeError(const char* format, ...) {
 void initVM() {
     resetStack();
     vm.objects = NULL;
+    initTable(&vm.strings);
 }
 
 /**
  * Tears down the Virtual Machine
  */
 void freeVM() {
+    freeTable(&vm.strings);
     freeObjects();
 }
 

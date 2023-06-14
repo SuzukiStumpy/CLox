@@ -2,12 +2,12 @@
 #include <stdlib.h>
 
 #include "compiler.h"
-#include "../common.h"
-#include "../scanner/scanner.h"
+#include "common.h"
+#include "scanner.h"
 
 // Must come _after_ common.h include
 #ifdef DEBUG_PRINT_CODE
-#include "../debug.h"
+#include "debug.h"
 #endif
 
 typedef struct {
