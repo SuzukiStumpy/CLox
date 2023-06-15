@@ -116,6 +116,27 @@ static void consume(TokenType type, const char* message) {
 }
 
 /**
+ * Returns true if the current token matches the required type.  False otherwise
+ * @param type The type to check
+ * @return true if type matches, false otherwise
+ */
+static bool check(TokenType type) {
+    return parser.current.type == type;
+}
+
+/**
+ * If the current token matches the required type, consume it and return true.  Otherwise, do nothing
+ * and return false
+ * @param type the type of the token we want to match
+ * @return true if current token matches type, false otherwise
+ */
+static bool match(TokenType type) {
+    if (!check(type)) return false;
+    advance();
+    return true;
+}
+
+/**
  * Append a single byte to memory
  * @param byte The byte value to store
  */
@@ -177,6 +198,8 @@ static void endCompiler() {
 
 // Some forward declarations to handle C's archaic compiler
 static void expression();
+static void statement();
+static void declaration();
 static ParseRule* getRule(TokenType type);
 static void parsePrecedence(Precedence precedence);
 
@@ -310,6 +333,31 @@ static void expression() {
 }
 
 /**
+ * Compiles a print statement and emits the requisite bytecode
+ */
+static void printStatement() {
+    expression();
+    consume(TOKEN_SEMICOLON, "Expect ';' after value.");
+    emitByte(OP_PRINT);
+}
+
+/**
+ * Compile a lox declaration and emit the requisite bytecode
+ */
+static void declaration() {
+    statement();
+}
+
+/**
+ * Compile a lox statement and emit the requisite bytecode
+ */
+static void statement() {
+    if (match(TOKEN_PRINT)) {
+        printStatement();
+    }
+}
+
+/**
  * Parse tokens at the supplied precedence level
  * @param precedence The precedence level at which we're operating
  */
@@ -355,8 +403,11 @@ bool compile(const char* source, Chunk* chunk) {
     parser.panicMode = false;
 
     advance();
-    expression();
-    consume(TOKEN_EOF, "Expect end of expression.");
+
+    while (!match(TOKEN_EOF)) {
+        declaration();
+    }
+
     endCompiler();
     return !parser.hadError;
 }

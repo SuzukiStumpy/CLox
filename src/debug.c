@@ -82,6 +82,8 @@ int disassembleInstruction(Chunk* chunk, int offset) {
             return simpleInstruction("OP_LESS", offset);
         case OP_NIL:
             return simpleInstruction("OP_NIL", offset);
+        case OP_PRINT:
+            return simpleInstruction("OP_PRINT", offset);
 
         default:
             printf("Unknown opcode %d\n", instruction);

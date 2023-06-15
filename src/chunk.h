@@ -18,6 +18,7 @@ typedef enum {
     OP_NOT,
     OP_MULTIPLY,
     OP_NEGATE,
+    OP_PRINT,
     OP_SUBTRACT,
     OP_RETURN,
 } OpCode;
