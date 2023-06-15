@@ -333,6 +333,15 @@ static void expression() {
 }
 
 /**
+ * Compiles an expression statement and emits the requisite bytecode
+ */
+static void expressionStatement() {
+    expression();
+    consume(TOKEN_SEMICOLON, "Expect ';' after expression.");
+    emitByte(OP_POP);
+}
+
+/**
  * Compiles a print statement and emits the requisite bytecode
  */
 static void printStatement() {
@@ -342,10 +351,38 @@ static void printStatement() {
 }
 
 /**
+ * If the parser panics due to an error in the user's program, we attempt to resynchronize and continue
+ */
+static void synchronize() {
+    parser.panicMode = false;
+
+    while (parser.current.type != TOKEN_EOF) {
+        if (parser.previous.type == TOKEN_SEMICOLON) return;
+        switch (parser.current.type) {
+            case TOKEN_CLASS: // Fall through is intentional
+            case TOKEN_FUN:
+            case TOKEN_VAR:
+            case TOKEN_FOR:
+            case TOKEN_IF:
+            case TOKEN_WHILE:
+            case TOKEN_PRINT:
+            case TOKEN_RETURN:
+                return;
+
+            default:; // Do nothing
+        }
+    }
+
+    advance();
+}
+
+/**
  * Compile a lox declaration and emit the requisite bytecode
  */
 static void declaration() {
     statement();
+
+    if (parser.panicMode) synchronize();
 }
 
 /**
@@ -354,6 +391,8 @@ static void declaration() {
 static void statement() {
     if (match(TOKEN_PRINT)) {
         printStatement();
+    } else {
+        expressionStatement();
     }
 }
 
