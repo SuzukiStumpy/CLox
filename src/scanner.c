@@ -256,8 +256,8 @@ Token scanToken() {
     if (isAtEnd()) return makeToken(TOKEN_EOF);
 
     char c = advance();
-    if (isDigit(c)) return number();
     if (isAlpha(c)) return identifier();
+    if (isDigit(c)) return number();
 
     switch (c) {
         // Single character tokens
