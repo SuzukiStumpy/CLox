@@ -168,6 +168,18 @@ static void emitBytes(uint8_t byte1, uint8_t byte2) {
 }
 
 /**
+ * Emits a Jump instruction
+ * @param instruction the instruction opcode to emit
+ * @return pointer to the instruction so we can backpatch the actual jump later
+ */
+static int emitJump(uint8_t instruction) {
+    emitByte(instruction);
+    emitByte(0xff);
+    emitByte(0xff);
+    return currentChunk()->count - 2;
+}
+
+/**
  * Emits a return opcode into the byte stream
  */
 static void emitReturn() {
@@ -195,6 +207,21 @@ static uint8_t makeConstant(Value value) {
  */
 static void emitConstant(Value value) {
     emitBytes(OP_CONSTANT, makeConstant(value));
+}
+
+/**
+ * Completes a compiled jump instruction by actually inserting the address to jump to
+ * @param offset The address in memory that we need to patch with the current IP
+ */
+static void patchJump(int offset) {
+    int jump = currentChunk()->count - offset - 2;
+
+    if (jump > UINT16_MAX) {
+        error("Too much code to jump over.");
+    }
+
+    currentChunk()->code[offset] = (jump >> 8) &0xff;
+    currentChunk()->code[offset + 1] = jump & 0xff;
 }
 
 /**
@@ -551,6 +578,26 @@ static void expressionStatement() {
 }
 
 /**
+ * Compiles an if statement
+ */
+static void ifStatement() {
+    consume(TOKEN_LEFT_PAREN, "Expect '(' after 'if'.");
+    expression();
+    consume(TOKEN_RIGHT_PAREN, "Expect ')' after condition.");
+
+    int thenJump = emitJump(OP_JUMP_IF_FALSE);
+    statement();
+
+    int elseJump = emitJump(OP_JUMP);
+
+    patchJump(thenJump);
+    emitByte(OP_POP);
+
+    if (match(TOKEN_ELSE)) statement();
+    patchJump(elseJump);
+}
+
+/**
  * Compiles a print statement and emits the requisite bytecode
  */
 static void printStatement() {
@@ -604,6 +651,8 @@ static void declaration() {
 static void statement() {
     if (match(TOKEN_PRINT)) {
         printStatement();
+    } else if (match(TOKEN_IF)) {
+        ifStatement();
     } else if (match(TOKEN_LEFT_BRACE)) {
         beginScope();
         block();
