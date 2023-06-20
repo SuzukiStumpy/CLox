@@ -39,7 +39,19 @@ typedef struct {
     Precedence precedence;
 } ParseRule;
 
+typedef struct {
+    Token name;
+    int depth;
+} Local;
+
+typedef struct {
+    Local locals[UINT8_COUNT];
+    int localCount;
+    int scopeDepth;
+} Compiler;
+
 Parser parser;
+Compiler* current = NULL;
 Chunk* compilingChunk;
 
 /**
@@ -185,6 +197,16 @@ static void emitConstant(Value value) {
 }
 
 /**
+ * Initialises the compiler structure which keeps track of local variables and lexical scope
+ * @param compiler The compiler structure to initialise
+ */
+static void initCompiler(Compiler* compiler) {
+    compiler->localCount = 0;
+    compiler->scopeDepth = 0;
+    current = compiler;
+}
+
+/**
  * Closes out compilation and shuts down the compiler
  */
 static void endCompiler() {
@@ -194,6 +216,20 @@ static void endCompiler() {
         disassembleChunk(currentChunk(), "code");
     }
 #endif
+}
+
+/**
+ * Begins a new lexical scope
+ */
+static void beginScope() {
+    current->scopeDepth++;
+}
+
+/**
+ * Ends a lexical scope
+ */
+static void endScope() {
+    current->scopeDepth--;
 }
 
 // Some forward declarations to handle C's archaic compiler
@@ -377,6 +413,17 @@ static void expression() {
 }
 
 /**
+ * Compiles a block of statements
+ */
+static void block() {
+    while (!check(TOKEN_RIGHT_BRACE) && !check(TOKEN_EOF)) {
+        declaration();
+    }
+
+    consume(TOKEN_RIGHT_BRACE, "Expect '}' after block.");
+}
+
+/**
  * Compiles a variable declaration and emits the requisite bytecode
  */
 static void varDeclaration() {
@@ -455,6 +502,10 @@ static void declaration() {
 static void statement() {
     if (match(TOKEN_PRINT)) {
         printStatement();
+    } else if (match(TOKEN_LEFT_BRACE)) {
+        beginScope();
+        block();
+        endScope();
     } else {
         expressionStatement();
     }
@@ -505,6 +556,8 @@ static ParseRule* getRule(TokenType type) {
  */
 bool compile(const char* source, Chunk* chunk) {
     initScanner(source);
+    Compiler compiler;
+    initCompiler(&compiler);
     compilingChunk = chunk;
 
     parser.hadError = false;
