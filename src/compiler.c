@@ -168,6 +168,20 @@ static void emitBytes(uint8_t byte1, uint8_t byte2) {
 }
 
 /**
+ * emits a loop start operation
+ * @param loopStart The offset at which the jump needs to return to
+ */
+static void emitLoop(int loopStart) {
+    emitByte(OP_LOOP);
+
+    int offset = currentChunk()->count - loopStart + 2;
+    if (offset > UINT16_MAX) error("Loop body too large.");
+
+    emitByte((offset >> 8) & 0xff);
+    emitByte(offset & 0xff);
+}
+
+/**
  * Emits a Jump instruction
  * @param instruction the instruction opcode to emit
  * @return pointer to the instruction so we can backpatch the actual jump later
@@ -635,6 +649,26 @@ static void printStatement() {
 }
 
 /**
+ * Compiles a while statement and emits the requisite bytecode
+ */
+static void whileStatement() {
+    int loopStart = currentChunk()->count;
+
+    consume(TOKEN_LEFT_PAREN, "Expect '(' after 'while'.");
+    expression();
+    consume(TOKEN_RIGHT_PAREN, "Expect ')' after condition.");
+
+    int exitJump = emitJump(OP_JUMP_IF_FALSE);
+    emitByte(OP_POP);
+    statement();
+
+    emitLoop(loopStart);
+
+    patchJump(exitJump);
+    emitByte(OP_POP);
+}
+
+/**
  * If the parser panics due to an error in the user's program, we attempt to resynchronize and continue
  */
 static void synchronize() {
@@ -681,6 +715,8 @@ static void statement() {
         printStatement();
     } else if (match(TOKEN_IF)) {
         ifStatement();
+    } else if (match(TOKEN_WHILE)) {
+        whileStatement();
     } else if (match(TOKEN_LEFT_BRACE)) {
         beginScope();
         block();
