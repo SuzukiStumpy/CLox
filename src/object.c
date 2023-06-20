@@ -26,6 +26,18 @@ static Obj* allocateObject(size_t size, ObjType type) {
 }
 
 /**
+ * Creates and allocates an empty function object
+ * @return Pointer to the function object created
+ */
+ObjFunction* newFunction() {
+    ObjFunction* function = ALLOCATE_OBJ(ObjFunction, OBJ_FUNCTION);
+    function->arity = 0;
+    function->name = NULL;
+    initChunk(&function->chunk);
+    return function;
+}
+
+/**
  * Allocates memory on the heap for a string of _chars_ length, stuffs the details into an ObjString structure
  * and returns it
  * @param chars The string to allocate
@@ -90,6 +102,19 @@ ObjString* copyString(const char* chars, int length) {
 }
 
 /**
+ * Prints out the definition of a function object
+ * @param function The function object to print
+ */
+static void printFunction(ObjFunction* function) {
+    if (function->name == NULL) {
+        printf("<script>");
+        return;
+    }
+
+    printf("<fn %s>", function->name->chars);
+}
+
+/**
  * Helper function.  Prints the value of an Object to the console
  * @param value The Object to print
  */
@@ -97,6 +122,9 @@ void printObject(Value value) {
     switch (OBJ_TYPE(value)) {
         case OBJ_STRING:
             printf("%s", AS_CSTRING(value));
+            break;
+        case OBJ_FUNCTION:
+            printFunction(AS_FUNCTION(value));
             break;
     }
 }
