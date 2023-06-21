@@ -38,6 +38,17 @@ ObjFunction* newFunction() {
 }
 
 /**
+ * Creates a function object for native (C) functions
+ * @param function the function to generate
+ * @return Pointer to the generated function object
+ */
+ObjNative* newNative(NativeFn function) {
+    ObjNative* native = ALLOCATE_OBJ(ObjNative, OBJ_NATIVE);
+    native->function = function;
+    return native;
+}
+
+/**
  * Allocates memory on the heap for a string of _chars_ length, stuffs the details into an ObjString structure
  * and returns it
  * @param chars The string to allocate
@@ -125,6 +136,9 @@ void printObject(Value value) {
             break;
         case OBJ_FUNCTION:
             printFunction(AS_FUNCTION(value));
+            break;
+        case OBJ_NATIVE:
+            printf("<native fn>");
             break;
     }
 }
