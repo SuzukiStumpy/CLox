@@ -26,12 +26,31 @@ static Obj* allocateObject(size_t size, ObjType type) {
 }
 
 /**
+ * Generates a new closure object (wrapping a function object) and returns it's pointer
+ * @param function The function to close over
+ * @return Pointer to the generated closure
+ */
+ObjClosure* newClosure(ObjFunction* function) {
+    ObjUpvalue** upvalues = ALLOCATE(ObjUpvalue*, function->upvalueCount);
+
+    for (int i = 0; i < function->upvalueCount; i++) {
+        upvalues[i] = NULL;
+    }
+    ObjClosure* closure = ALLOCATE_OBJ(ObjClosure, OBJ_CLOSURE);
+    closure->function = function;
+    closure->upvalues = upvalues;
+    closure->upvalueCount = function->upvalueCount;
+    return closure;
+}
+
+/**
  * Creates and allocates an empty function object
  * @return Pointer to the function object created
  */
 ObjFunction* newFunction() {
     ObjFunction* function = ALLOCATE_OBJ(ObjFunction, OBJ_FUNCTION);
     function->arity = 0;
+    function->upvalueCount = 0;
     function->name = NULL;
     initChunk(&function->chunk);
     return function;
@@ -113,6 +132,19 @@ ObjString* copyString(const char* chars, int length) {
 }
 
 /**
+ * Allocates a new upvalue object pointing to the variable in slot 'slot'
+ * @param slot Pointer to the value we are referencing
+ * @return Pointer to the generrated upvalue object
+ */
+ObjUpvalue* newUpvalue(Value* slot) {
+    ObjUpvalue* upvalue = ALLOCATE_OBJ(ObjUpvalue, OBJ_UPVALUE);
+    upvalue->location = slot;
+    upvalue->next = NULL;
+    upvalue->closed = NIL_VAL;
+    return upvalue;
+}
+
+/**
  * Prints out the definition of a function object
  * @param function The function object to print
  */
@@ -139,6 +171,12 @@ void printObject(Value value) {
             break;
         case OBJ_NATIVE:
             printf("<native fn>");
+            break;
+        case OBJ_CLOSURE:
+            printFunction(AS_CLOSURE(value)->function);
+            break;
+        case OBJ_UPVALUE:
+            printf("upvalue");
             break;
     }
 }
