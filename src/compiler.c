@@ -1028,3 +1028,15 @@ ObjFunction* compile(const char* source) {
     ObjFunction* function = endCompiler();
     return parser.hadError ? NULL : function;
 }
+
+/**
+ * Part of the GC implementation.  Marks any heap allocated objects that are reachable during the compilation
+ * phase.
+ */
+void markCompilerRoots() {
+    Compiler* compiler = current;
+    while (compiler != NULL) {
+        markObject((Obj*)compiler->function);
+        compiler = compiler->enclosing;
+    }
+}
