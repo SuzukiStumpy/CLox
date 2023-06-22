@@ -31,6 +31,19 @@ static Obj* allocateObject(size_t size, ObjType type) {
 }
 
 /**
+ * Generates a new bound method object.
+ * @param receiver The receiver of the bound method (ie: the instance we're binding to)
+ * @param method The method to bind
+ * @return Pointer to the generated object
+ */
+ObjBoundMethod* newBoundMethod(Value receiver, ObjClosure* method) {
+    ObjBoundMethod* bound = ALLOCATE_OBJ(ObjBoundMethod, OBJ_BOUND_METHOD);
+    bound->receiver = receiver;
+    bound->method = method;
+    return bound;
+}
+
+/**
  * Generates a new class object and returns it
  * @param name Name of the glass to generate
  * @return Pointer to the allocated object
@@ -38,6 +51,7 @@ static Obj* allocateObject(size_t size, ObjType type) {
 ObjClass* newClass(ObjString* name) {
     ObjClass* klass = ALLOCATE_OBJ(ObjClass, OBJ_CLASS);
     klass->name = name;
+    initTable(&klass->methods);
     return klass;
 }
 
@@ -214,6 +228,9 @@ void printObject(Value value) {
             break;
         case OBJ_INSTANCE:
             printf("%s instance", AS_INSTANCE(value)->klass->name->chars);
+            break;
+        case OBJ_BOUND_METHOD:
+            printFunction(AS_BOUND_METHOD(value)->method->function);
             break;
     }
 }
