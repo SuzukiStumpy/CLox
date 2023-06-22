@@ -98,21 +98,36 @@ void blackenObject(Obj* object) {
         case OBJ_NATIVE:
         case OBJ_STRING:
             break;
-        case OBJ_UPVALUE:
-            markValue(((ObjUpvalue*)object)->closed);
+        case OBJ_UPVALUE: {
+            markValue(((ObjUpvalue *) object)->closed);
             break;
-        case OBJ_FUNCTION:
-            ObjFunction* function = (ObjFunction*)object;
-            markObject((Obj*)function->name);
+        }
+        case OBJ_FUNCTION: {
+            ObjFunction *function = (ObjFunction *) object;
+            markObject((Obj *) function->name);
             markArray(&function->chunk.constants);
             break;
-        case OBJ_CLOSURE:
-            ObjClosure* closure = (ObjClosure*)object;
-            markObject((Obj*)closure->function);
+        }
+        case OBJ_CLOSURE: {
+            ObjClosure *closure = (ObjClosure *) object;
+            markObject((Obj *) closure->function);
             for (int i = 0; i < closure->upvalueCount; i++) {
-                markObject((Obj*)closure->upvalues[i]);
+                markObject((Obj *) closure->upvalues[i]);
             }
             break;
+        }
+        case OBJ_CLASS: {
+            ObjClass *klass = (ObjClass *) object;
+            markObject((Obj *) klass->name);
+            break;
+        }
+        case OBJ_INSTANCE: {
+            ObjInstance* instance = (ObjInstance*)object;
+            markObject((Obj*)instance->klass);
+            markTable(&instance->fields);
+            break;
+        }
+
     }
 }
 
@@ -150,6 +165,16 @@ static void freeObject(Obj* object) {
         }
         case OBJ_UPVALUE: {
             FREE(ObjUpvalue, object);
+            break;
+        }
+        case OBJ_CLASS: {
+            FREE(ObjClass, object);
+            break;
+        }
+        case OBJ_INSTANCE: {
+            ObjInstance* instance = (ObjInstance*)object;
+            freeTable(&instance->fields);
+            FREE(ObjInstance, object);
             break;
         }
     }
