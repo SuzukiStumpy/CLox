@@ -203,6 +203,47 @@ static bool callValue(Value callee, int argCount) {
 }
 
 /**
+ * Performs actual invocation of a method
+ * @param klass Class to pull method from
+ * @param name Name of the method
+ * @param argCount Number of arguments on the stack
+ * @return True if invocation succeeded, false otherwise
+ */
+static bool invokeFromClass(ObjClass* klass, ObjString* name, int argCount) {
+    Value method;
+    if (!tableGet(&klass->methods, name, &method)) {
+        runtimeError("Undefined property '%s'.", name->chars);
+        return false;
+    }
+    return call(AS_CLOSURE(method), argCount);
+}
+
+/**
+ * Optimisation - runs the OP_INVOKE instruction to call a method.
+ * @param name Method to call
+ * @param argCount Number of arguments on the stack
+ * @return true if invocation was successful, false otherwise.
+ */
+static bool invoke(ObjString* name, int argCount) {
+    Value receiver = peek(argCount);
+
+    if (!IS_INSTANCE(receiver)) {
+        runtimeError("Only instances have methods.");
+        return false;
+    }
+
+    ObjInstance* instance = AS_INSTANCE(receiver);
+
+    Value value;
+    if (tableGet(&instance->fields, name, &value)) {
+        vm.stackTop[-argCount - 1] = value;
+        return callValue(value, argCount);
+    }
+
+    return invokeFromClass(instance->klass, name, argCount);
+}
+
+/**
  * Executes method binding when defining class methods
  * @param klass The class to work with
  * @param name The name of the method to bind
@@ -512,6 +553,15 @@ static InterpretResult run() {
             }
             case OP_METHOD: {
                 defineMethod(READ_STRING());
+                break;
+            }
+            case OP_INVOKE: {
+                ObjString* method = READ_STRING();
+                int argCount = READ_BYTE();
+                if (!invoke(method, argCount)) {
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                frame = &vm.frames[vm.frameCount - 1];
                 break;
             }
 

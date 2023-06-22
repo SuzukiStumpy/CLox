@@ -63,6 +63,22 @@ static int constantInstruction(const char* name, Chunk* chunk, int offset) {
 }
 
 /**
+ * Handles the dumping of an invoke instruction to the disassembly
+ * @param name The name of the instruction
+ * @param chunk Point to memory
+ * @param offset The offset into the memory to get
+ * @return The offset for the next instruction to be read
+ */
+static int invokeInstruction(const char* name, Chunk* chunk, int offset) {
+    uint8_t constant = chunk->code[offset + 1];
+    uint8_t argCount = chunk->code[offset + 2];
+    printf("-16s (%d args) %4d '", name, argCount, constant);
+    printValue(chunk->constants.values[constant]);
+    printf("'\n");
+    return offset + 3;
+}
+
+/**
  * Disassembles an individual instruction within a chunk and returns the offset to
  * the next instruction
  * @param chunk The chunk we're working with
@@ -156,6 +172,8 @@ int disassembleInstruction(Chunk* chunk, int offset) {
             return constantInstruction("OP_SET_PROPERTY", chunk, offset);
         case OP_METHOD:
             return constantInstruction("OP_METHOD", chunk, offset);
+        case OP_INVOKE:
+            return invokeInstruction("OP_INVOKE", chunk, offset);
 
         default:
             printf("Unknown opcode %d\n", instruction);
